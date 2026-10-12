@@ -307,8 +307,13 @@ class WebDropHandler(http.server.BaseHTTPRequestHandler):
 
 def run():
     port = PORT
-    if len(sys.argv) > 1 and sys.argv[1].isdigit():
-        port = int(sys.argv[1])
+    tunnel_mode = False
+    args = sys.argv[1:]
+    if "--tunnel" in args:
+        tunnel_mode = True
+        args.remove("--tunnel")
+    if len(args) > 0 and args[0].isdigit():
+        port = int(args[0])
 
     ip = get_local_ip()
     url = f"http://{ip}:{port}"
@@ -316,9 +321,23 @@ def run():
     print("=" * 60)
     print("  LOCAL WEBDROP (iPhone <-> Arch Linux)")
     print("=" * 60)
-    print(f"  URL Akses: {url}")
-    print(f"  Folder Upload: {UPLOADS_DIR}")
+    print(f"  Akses Wi-Fi Lokal : {url}")
+    print(f"  Folder Upload     : {UPLOADS_DIR}")
     print("-" * 60)
+
+    # Optional public tunnel fallback (bypasses Wi-Fi Client Isolation)
+    tunnel_proc = None
+    if tunnel_mode:
+        print("  [Tunnel] Mengaktifkan jalur publik (AP Isolation bypass)...")
+        try:
+            # pinggy tunnel: zero install, uses standard ssh
+            cmd = f"ssh -p 443 -R0:localhost:{port} -o StrictHostKeyChecking=no a.pinggy.io"
+            tunnel_proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            # read output line for url
+            time.sleep(2.5)
+        except Exception as e:
+            print(f"  [Tunnel] Gagal start tunnel: {e}")
+
     print("  Scan QR Code ini langsung di Camera iPhone:")
     print("-" * 60)
 
@@ -336,6 +355,8 @@ def run():
     print("=" * 60)
 
     class ReusableTCPServer(socketserver.TCPServer):
+        # Bind to both IPv4 and IPv6 if supported
+        address_family = socket.AF_INET
         allow_reuse_address = True
 
     with ReusableTCPServer(("", port), WebDropHandler) as httpd:
