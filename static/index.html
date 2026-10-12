@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Local WebDrop</title>
+  <meta name="theme-color" content="#090d16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 20px) 16px;
+    }
+
+    .container {
+      max-width: 640px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-bottom: 24px;
+    }
+
+    /* Top Dynamic Island / Capsule Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .status-badge {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 8px #34d399;
+    }
+
+    /* Card styling */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 18px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Clipboard Section */
+    .clipboard-box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px;
+      color: var(--text);
+      /* 16px minimum prevents iOS Safari auto-zoom */
+      font-size: 16px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:active {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+
+    .btn-secondary:active {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Upload Drop Zone */
+    .dropzone {
+      border: 2px dashed rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius);
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .dropzone-icon {
+      font-size: 32px;
+      margin-bottom: 4px;
+    }
+
+    .dropzone-text {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .dropzone-hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Progress bar */
+    .progress-container {
+      display: none;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      transition: width 0.2s ease;
+    }
+
+    /* File List */
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .file-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .file-details {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .file-name {
+      font-size: 0.92rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .file-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      padding: 0;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+    }
+
+    .btn-icon.delete {
+      color: #f87171;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 24px 0;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    /* Dynamic Island Toast */
+    .toast {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 16px) + 12px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: white;
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="toast" class="toast">
+    <span id="toast-icon">✨</span>
+    <span id="toast-msg">Notifikasi</span>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <span>Local WebDrop</span>
+      </div>
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span id="conn-status">Online</span>
+      </div>
+    </header>
+
+    <!-- Clipboard Sync Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>📋 Clipboard Dua Arah</span>
+        <span id="clip-time" style="font-size:0.75rem; color:var(--text-muted);">Sync otomatis</span>
+      </div>
+      <div class="clipboard-box">
+        <textarea id="clipText" placeholder="Ketik atau paste teks di sini untuk kirim ke Arch Linux / iPhone..."></textarea>
+        <div class="btn-row">
+          <button class="btn-primary" onclick="sendClipboard()">
+            <span>Kirim Teks</span> 🚀
+          </button>
+          <button class="btn-secondary" onclick="copyClipboard()">
+            <span>Salin Teks</span> 📋
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>📤 Kirim Berkas</span>
+      </div>
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        <div class="dropzone-icon">📁</div>
+        <div class="dropzone-text">Pilih atau Drag & Drop Berkas</div>
+        <div class="dropzone-hint">Foto, video, dokumen tanpa kompresi</div>
+      </div>
+      <input type="file" id="fileInput" multiple style="display:none" onchange="handleFiles(this.files)">
+
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+
+    <!-- Files Received Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>📥 Daftar Berkas (<span id="fileCount">0</span>)</span>
+        <button class="btn-icon" style="width:28px; height:28px; font-size:12px;" onclick="loadStatus()">🔄</button>
+      </div>
+      <div class="file-list" id="fileList">
+        <div class="empty-state">Belum ada berkas tersimpan.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let lastClipboardText = "";
+
+    function showToast(msg, icon = "✨") {
+      const toast = document.getElementById("toast");
+      document.getElementById("toast-msg").innerText = msg;
+      document.getElementById("toast-icon").innerText = icon;
+      toast.classList.add("show");
+      if (navigator.vibrate) navigator.vibrate(15);
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2500);
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return "0 B";
+      const k = 1024;
+      const sizes = ["B", "KB", "MB", "GB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+    }
+
+    async function loadStatus() {
+      try {
+        const res = await fetch("/api/status");
+        if (!res.ok) throw new Error("Gagal mengambil status");
+        const data = await res.json();
+        
+        // Update clipboard if changed on server
+        if (data.clipboard && data.clipboard.text !== lastClipboardText) {
+          // If activeElement is not the textarea, update it
+          const active = document.activeElement === document.getElementById("clipText");
+          if (!active) {
+            document.getElementById("clipText").value = data.clipboard.text;
+            lastClipboardText = data.clipboard.text;
+          }
+          if (data.clipboard.updated_at) {
+            const dt = new Date(data.clipboard.updated_at * 1000);
+            document.getElementById("clip-time").innerText = "Update: " + dt.toLocaleTimeString();
+          }
+        }
+
+        // Render file list
+        renderFileList(data.files || []);
+      } catch (err) {
+        document.getElementById("conn-status").innerText = "Offline";
+        document.getElementById("conn-status").style.color = "#f87171";
+      }
+    }
+
+    function renderFileList(files) {
+      const listEl = document.getElementById("fileList");
+      document.getElementById("fileCount").innerText = files.length;
+      if (files.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Belum ada berkas tersimpan.</div>';
+        return;
+      }
+
+      listEl.innerHTML = files.map(f => {
+        let icon = "📄";
+        const ext = f.name.split('.').pop().toLowerCase();
+        if (["png", "jpg", "jpeg", "gif", "webp", "heic"].includes(ext)) icon = "🖼️";
+        else if (["mp4", "mov", "mkv", "webm"].includes(ext)) icon = "🎥";
+        else if (["mp3", "wav", "m4a", "flac"].includes(ext)) icon = "🎵";
+        else if (["zip", "tar", "gz", "7z", "rar"].includes(ext)) icon = "📦";
+        else if (["pdf"].includes(ext)) icon = "📑";
+
+        return `
+          <div class="file-item">
+            <div class="file-info">
+              <span class="file-icon">${icon}</span>
+              <div class="file-details">
+                <div class="file-name" title="${f.name}">${f.name}</div>
+                <div class="file-meta">${formatBytes(f.size)}</div>
+              </div>
+            </div>
+            <div class="file-actions">
+              <a href="/download/${encodeURIComponent(f.name)}" download class="btn-icon" style="display:flex;align-items:center;justify-content:center;text-decoration:none;">⬇️</a>
+              <button class="btn-icon delete" onclick="deleteFile('${encodeURIComponent(f.name)}')">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function sendClipboard() {
+      const text = document.getElementById("clipText").value;
+      try {
+        const res = await fetch("/api/clipboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+        if (res.ok) {
+          lastClipboardText = text;
+          showToast("Teks berhasil terkirim!", "🚀");
+        }
+      } catch (err) {
+        showToast("Gagal kirim teks", "❌");
+      }
+    }
+
+    async function copyClipboard() {
+      const text = document.getElementById("clipText").value;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("Tersalin ke clipboard!", "📋");
+      } catch (e) {
+        showToast("Gagal salin otomatis", "⚠️");
+      }
+    }
+
+    async function deleteFile(filename) {
+      if (!confirm("Hapus berkas ini?")) return;
+      try {
+        const res = await fetch(`/api/files/${filename}`, { method: "DELETE" });
+        if (res.ok) {
+          showToast("Berkas dihapus", "🗑️");
+          loadStatus();
+        }
+      } catch (e) {
+        showToast("Gagal hapus", "❌");
+      }
+    }
+
+    function handleFiles(files) {
+      if (!files || files.length === 0) return;
+      
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append("files", files[i]);
+      }
+
+      const progressContainer = document.getElementById("progressContainer");
+      const progressBar = document.getElementById("progressBar");
+      progressContainer.style.display = "block";
+      progressBar.style.width = "0%";
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/upload", true);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          progressBar.style.width = pct + "%";
+        }
+      };
+
+      xhr.onload = () => {
+        progressContainer.style.display = "none";
+        if (xhr.status === 200) {
+          showToast("Berkas berhasil diunggah!", "✅");
+          loadStatus();
+        } else {
+          showToast("Gagal mengunggah", "❌");
+        }
+      };
+
+      xhr.onerror = () => {
+        progressContainer.style.display = "none";
+        showToast("Koneksi gagal saat upload", "❌");
+      };
+
+      xhr.send(formData);
+    }
+
+    // Drag and drop event listeners
+    const dropzone = document.getElementById("dropzone");
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+      }, false);
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      handleFiles(files);
+    });
+
+    // Initial polling
+    loadStatus();
+    setInterval(loadStatus, 3000);
+  </script>
+</body>
+</html>
