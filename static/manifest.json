@@ -1,0 +1,18 @@
+{
+  "name": "Local WebDrop",
+  "short_name": "WebDrop",
+  "description": "Local Wi-Fi file and clipboard transfer between Arch Linux and iOS",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay"],
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
